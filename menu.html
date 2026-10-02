@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Menyu</title>
+<style>
+  :root{
+    --bg:#faf7f2; --card:#fff; --ink:#2b2118; --muted:#8a7d6f; --border:#e8dfd3;
+    --rahmat:#c9752f; --doda:#6f4e37;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#1c1712; --card:#26201a; --ink:#f0e9df; --muted:#a99a86; --border:#3a3226; }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Segoe UI,Roboto,sans-serif;}
+  header{padding:26px 16px 12px;text-align:center;}
+  .logo{font-size:1.7rem;font-weight:800;letter-spacing:.5px;}
+  .bizsub{color:var(--muted);font-size:.85rem;margin-top:2px;}
+  .switcher{display:flex;gap:8px;padding:10px 16px;max-width:520px;margin:0 auto;}
+  .switcher button{flex:1;padding:12px;border-radius:14px;border:2px solid var(--border);background:var(--card);color:var(--ink);font-weight:700;font-size:.95rem;cursor:pointer;}
+  .switcher button.active.rahmat{background:var(--rahmat);border-color:var(--rahmat);color:#fff;}
+  .switcher button.active.doda{background:var(--doda);border-color:var(--doda);color:#fff;}
+  main{max-width:520px;margin:0 auto;padding:6px 16px 40px;}
+  .cat{margin-top:24px;}
+  .cat h2{font-size:1.05rem;margin:0 0 8px;padding-bottom:6px;border-bottom:2px solid var(--border);}
+  .item{padding:12px 0;border-bottom:1px dashed var(--border);}
+  .item:last-child{border-bottom:none;}
+  .item-media{margin-bottom:8px;}
+  .item-image{width:100%;max-height:240px;object-fit:cover;border-radius:12px;display:block;}
+  .item-video{width:100%;max-height:280px;border-radius:12px;display:block;margin-top:6px;background:#000;}
+  .item-body{display:flex;justify-content:space-between;gap:12px;}
+  .item .iname{font-weight:600;}
+  .item .idesc{color:var(--muted);font-size:.8rem;margin-top:2px;}
+  .item .iprice{white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums;}
+  .empty{text-align:center;color:var(--muted);padding:50px 10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" id="bizLogo">🍰</div>
+  <div class="bizsub" id="bizSub"></div>
+</header>
+
+<div class="switcher">
+  <button id="tabRahmat" data-biz="rahmat">Rahmat Chef</button>
+  <button id="tabDoda" data-biz="doda">Doda Coffee</button>
+</div>
+
+<main id="menuMain"></main>
+
+<script>
+// ====== MENYU MA'LUMOTLARI (admin.html orqali eksport qilinganda shu joy yangilanadi) ======
+const MENU_DATA = {
+  rahmat: { title: "Rahmat Chef", subtitle: "Ko'kcha darvoza 340a", categories: [] },
+  doda:   { title: "Doda Coffee", subtitle: "", categories: [] }
+}; //__END_MENU_DATA__
+// ============================================================================================
+
+let activeBiz = (location.hash.replace('#','') === 'doda') ? 'doda' : 'rahmat';
+
+function fmt(n){
+  const v = Number(n);
+  if(isNaN(v)) return '0';
+  return Math.round(v).toLocaleString('uz-UZ');
+}
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function setActiveBiz(biz){
+  activeBiz = biz;
+  history.replaceState(null, '', '#'+biz);
+  document.getElementById('tabRahmat').classList.toggle('active', biz==='rahmat');
+  document.getElementById('tabRahmat').classList.toggle('rahmat', biz==='rahmat');
+  document.getElementById('tabDoda').classList.toggle('active', biz==='doda');
+  document.getElementById('tabDoda').classList.toggle('doda', biz==='doda');
+  renderMenu();
+}
+
+function renderMenu(){
+  const data = MENU_DATA[activeBiz];
+  document.getElementById('bizLogo').textContent = activeBiz==='rahmat' ? '🍰' : '☕';
+  document.getElementById('bizSub').textContent = data.subtitle || data.title;
+  document.title = data.title + ' — Menyu';
+
+  const main = document.getElementById('menuMain');
+  const cats = data.categories || [];
+  if(cats.length===0){
+    main.innerHTML = `<div class="empty">Menyu hali tayyorlanmoqda…</div>`;
+    return;
+  }
+  main.innerHTML = cats.map(cat=>`
+    <div class="cat">
+      <h2>${escapeHtml(cat.name)}</h2>
+      ${(cat.items||[]).length===0 ? `<div class="empty" style="padding:14px">Bu bo'limda hali mahsulot yo'q</div>` : cat.items.map(it=>`
+        <div class="item">
+          ${(it.image || it.video) ? `<div class="item-media">
+            ${it.image ? `<img class="item-image" src="${escapeHtml(it.image)}" alt="${escapeHtml(it.name)}" loading="lazy">` : ''}
+            ${it.video ? `<video class="item-video" src="${escapeHtml(it.video)}" controls playsinline preload="metadata"></video>` : ''}
+          </div>` : ''}
+          <div class="item-body">
+            <div>
+              <div class="iname">${escapeHtml(it.name)}</div>
+              ${it.desc ? `<div class="idesc">${escapeHtml(it.desc)}</div>` : ''}
+            </div>
+            <div class="iprice">${fmt(it.price)} so'm</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+document.getElementById('tabRahmat').addEventListener('click', ()=>setActiveBiz('rahmat'));
+document.getElementById('tabDoda').addEventListener('click', ()=>setActiveBiz('doda'));
+window.addEventListener('hashchange', ()=>{
+  const b = location.hash.replace('#','');
+  if(b==='rahmat' || b==='doda') setActiveBiz(b);
+});
+
+setActiveBiz(activeBiz);
+</script>
+</body>
+</html>
