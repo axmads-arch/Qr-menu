@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Menyu — Admin panel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#faf7f2; --card:#fff; --ink:#2b2118; --muted:#8a7d6f; --border:#e8dfd3; --accent:#c9752f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#1c1712; --card:#26201a; --ink:#f0e9df; --muted:#a99a86; --border:#3a3226; }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:40px;}
+  header{padding:18px 16px 6px;text-align:center;}
+  header h1{margin:0;font-size:1.2rem;}
+  header p{margin:4px 0 0;color:var(--muted);font-size:.8rem;}
+  .tabs{display:flex;gap:6px;padding:10px 16px;max-width:640px;margin:0 auto;}
+  .tab{flex:1;padding:10px;border-radius:12px;border:2px solid var(--border);background:var(--card);color:var(--ink);font-weight:700;cursor:pointer;text-align:center;}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  main{max-width:640px;margin:0 auto;padding:6px 16px 30px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;}
+  input[type=text],input[type=number],textarea,input[type=url]{
+    width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);font-size:.95rem;
+  }
+  .field{margin-bottom:6px;}
+  .field label{font-size:.72rem;color:var(--muted);display:block;margin-bottom:2px;}
+  button.btn{padding:9px 14px;border-radius:8px;border:none;background:var(--ink);color:var(--bg);font-weight:600;cursor:pointer;font-size:.9rem;}
+  button.btn.primary{background:var(--accent);color:#fff;}
+  button.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--ink);}
+  button.btn.danger{background:#c0392b;color:#fff;}
+  button.btn.full{width:100%;}
+  .divider{border-top:1px solid var(--border);margin:14px 0;}
+  .itemcard{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;}
+  .itemcard .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .thumb{width:100%;max-height:110px;object-fit:cover;border-radius:8px;margin-top:6px;display:none;}
+  .thumb.show{display:block;}
+  .muted{color:var(--muted);font-size:.78rem;}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:20px;font-size:.85rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:99;max-width:90vw;text-align:center;}
+  .toast.show{opacity:1;}
+  .qrbox{text-align:center;padding:10px 0;}
+  .qrbox img,.qrbox canvas{background:#fff;padding:10px;border-radius:10px;}
+  .tinylink{font-size:.72rem;color:var(--muted);text-align:center;margin-top:6px;word-break:break-all;}
+  .catheader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚙️ Menyu — Admin panel</h1>
+  <p>Bu sahifani mijozlarga bermang. Faqat o'zingiz uchun.</p>
+</header>
+
+<div class="tabs">
+  <button class="tab" id="tabRahmat" data-biz="rahmat">Rahmat Chef</button>
+  <button class="tab" id="tabDoda" data-biz="doda">Doda Coffee</button>
+</div>
+
+<main>
+  <div class="card" id="githubCard">
+    <div class="row" style="margin-bottom:4px">
+      <div style="font-weight:700">🔗 GitHub bilan ulanish</div>
+      <span class="muted" id="githubStatus">sozlanmagan</span>
+    </div>
+    <div class="muted" style="margin-bottom:8px">Rasm/video fayllarini asl sifatida to'g'ridan-to'g'ri GitHub repongizga yuklash uchun. Bir marta sozlaysiz.</div>
+    <div class="field"><label>GitHub foydalanuvchi nomi</label>
+      <input type="text" id="ghOwner" placeholder="masalan: ahmadjon123">
+    </div>
+    <div class="field"><label>Repository nomi (qr-menu joylashgan)</label>
+      <input type="text" id="ghRepo" placeholder="masalan: qr-menu">
+    </div>
+    <div class="field"><label>Branch</label>
+      <input type="text" id="ghBranch" placeholder="main" value="main">
+    </div>
+    <div class="field"><label>Shaxsiy token (Personal Access Token)</label>
+      <input type="text" id="ghToken" placeholder="ghp_...">
+    </div>
+    <button class="btn ghost full" id="ghSaveBtn">💾 Saqlash</button>
+    <div class="tinylink">Token yo'q bo'lsa: <a href="https://github.com/settings/tokens/new?scopes=repo&description=QR%20Menyu" target="_blank" rel="noopener">shu havoladan</a> "repo" huquqi bilan yarating va shu yerga joylashtiring. Token faqat shu brauzeringizda saqlanadi, hech kimga yubormang.</div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:0">
+      <div style="font-weight:700">Yangi kategoriya</div>
+    </div>
+    <div class="field" style="margin-top:8px">
+      <input type="text" id="newCatName" placeholder="Kategoriya nomi (masalan: Tortlar)">
+    </div>
+    <button class="btn primary full" id="addCatBtn">＋ Kategoriya qo'shish</button>
+  </div>
+
+  <div id="catsList"></div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:8px">🚀 GitHub'ga to'g'ridan-to'g'ri nashr qilish</div>
+    <div class="muted" style="margin-bottom:10px">Tanlangan rasm/video fayllar asl sifatida repoga yuklanadi, so'ng menu.html avtomatik yangilanadi — qo'lda yuklab olish/qayta joylash shart emas.</div>
+    <button class="btn primary full" id="publishBtn">🚀 Yuklash va nashr qilish</button>
+    <div class="tinylink" id="publishStatus"></div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:8px">📤 Yoki qo'lda yuklab olish (zaxira usul)</div>
+    <div class="muted" style="margin-bottom:10px">GitHub token sozlamasangiz ham ishlaydi — lekin bu holda rasm/video uchun faqat tayyor havola (URL) maydonlari hisobga olinadi.</div>
+    <button class="btn ghost full" id="exportBtn">⬇️ menu.html yuklab olish</button>
+    <div class="tinylink">Yuklab olgan faylni GitHub'dagi <b>menu.html</b> o'rniga qo'ying (Upload files → Commit). Admin.html'ga tegmang.</div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:8px">🔲 QR kod</div>
+    <div class="field">
+      <label>Menyu sahifasining internetdagi manzili (menu.html)</label>
+      <input type="url" id="menuBaseUrl" placeholder="https://username.github.io/repo-nomi/menu.html">
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="qrRahmatBtn" style="flex:1">Rahmat Chef QR</button>
+      <button class="btn ghost" id="qrDodaBtn" style="flex:1">Doda Coffee QR</button>
+    </div>
+    <div class="qrbox" id="qrRender"></div>
+    <div class="tinylink" id="qrLink"></div>
+    <button class="btn primary full" id="qrDownloadBtn" style="margin-top:8px;display:none">⬇️ PNG yuklab olish</button>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'qr_menu_admin_draft_v1';
+const DEFAULT_DATA = {
+  rahmat: { title: "Rahmat Chef", subtitle: "Ko'kcha darvoza 340a", categories: [] },
+  doda:   { title: "Doda Coffee", subtitle: "", categories: [] }
+};
+let data = loadDraft();
+let activeBiz = 'rahmat';
+let lastQrBiz = null;
+let pendingFiles = {}; // "biz-ci-ii-image"/"biz-ci-ii-video" -> File
+
+// ---------- GitHub sozlamalari ----------
+const GH_KEY = 'qr_menu_github_config_v1';
+function loadGhConfig(){
+  try{ return JSON.parse(localStorage.getItem(GH_KEY)) || {branch:'main'}; }
+  catch(e){ return {branch:'main'}; }
+}
+function saveGhConfigFromForm(){
+  const cfg = {
+    owner: document.getElementById('ghOwner').value.trim(),
+    repo: document.getElementById('ghRepo').value.trim(),
+    branch: document.getElementById('ghBranch').value.trim() || 'main',
+    token: document.getElementById('ghToken').value.trim()
+  };
+  localStorage.setItem(GH_KEY, JSON.stringify(cfg));
+  updateGhStatus();
+  showToast('Saqlandi');
+}
+function fillGhForm(){
+  const cfg = loadGhConfig();
+  document.getElementById('ghOwner').value = cfg.owner||'';
+  document.getElementById('ghRepo').value = cfg.repo||'';
+  document.getElementById('ghBranch').value = cfg.branch||'main';
+  document.getElementById('ghToken').value = cfg.token||'';
+  updateGhStatus();
+}
+function updateGhStatus(){
+  const cfg = loadGhConfig();
+  const el = document.getElementById('githubStatus');
+  el.textContent = (cfg.owner && cfg.repo && cfg.token) ? '✅ ulangan' : 'sozlanmagan';
+}
+document.getElementById('ghSaveBtn').addEventListener('click', saveGhConfigFromForm);
+
+function loadDraft(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ console.error(e); }
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+function saveDraft(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  catch(e){ console.error(e); showToast('Saqlashda xato'); }
+}
+
+let toastTimer=null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+// ---------- Tab almashish ----------
+function setBiz(biz){
+  activeBiz = biz;
+  document.getElementById('tabRahmat').classList.toggle('active', biz==='rahmat');
+  document.getElementById('tabDoda').classList.toggle('active', biz==='doda');
+  renderCats();
+}
+document.getElementById('tabRahmat').addEventListener('click', ()=>setBiz('rahmat'));
+document.getElementById('tabDoda').addEventListener('click', ()=>setBiz('doda'));
+
+// ---------- Kategoriya / mahsulot boshqaruvi ----------
+document.getElementById('addCatBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('newCatName');
+  const name = input.value.trim();
+  if(!name){ showToast('Kategoriya nomini kiriting'); return; }
+  data[activeBiz].categories = data[activeBiz].categories || [];
+  data[activeBiz].categories.push({name, items:[]});
+  input.value='';
+  saveDraft();
+  renderCats();
+});
+
+function renderCats(){
+  const wrap = document.getElementById('catsList');
+  const cats = data[activeBiz].categories || [];
+  wrap.innerHTML = cats.map((cat,ci)=>`
+    <div class="card">
+      <div class="catheader">
+        <div style="font-weight:700">${escapeHtml(cat.name)}</div>
+        <button class="btn danger" data-action="del-cat" data-ci="${ci}">🗑 Kategoriya</button>
+      </div>
+      ${(cat.items||[]).map((it,ii)=>`
+        <div class="itemcard">
+          <div class="grid2">
+            <div class="field"><label>Nomi</label>
+              <input type="text" value="${escapeHtml(it.name)}" data-f="name" data-ci="${ci}" data-ii="${ii}">
+            </div>
+            <div class="field"><label>Narxi (so'm)</label>
+              <input type="number" value="${it.price||0}" data-f="price" data-ci="${ci}" data-ii="${ii}">
+            </div>
+          </div>
+          <div class="field"><label>Tavsif (ixtiyoriy)</label>
+            <input type="text" value="${escapeHtml(it.desc||'')}" data-f="desc" data-ci="${ci}" data-ii="${ii}" placeholder="Masalan: pista, shokolad bilan">
+          </div>
+          <div class="field"><label>Rasm — fayldan tanlang (asl sifatda GitHub'ga yuklanadi)</label>
+            <input type="file" accept="image/*" data-fileaction="pick-image" data-ci="${ci}" data-ii="${ii}">
+            <img class="thumb ${it.image?'show':''}" src="${escapeHtml(it.image||'')}" data-thumb-img data-ci="${ci}" data-ii="${ii}">
+            ${it.image ? `<div class="muted" style="margin-top:2px">Joriy: ${escapeHtml(it.image)}</div>` : ''}
+          </div>
+          <div class="field"><label>...yoki tayyor rasm havolasi</label>
+            <input type="url" value="${escapeHtml(it.image||'')}" data-f="image" data-ci="${ci}" data-ii="${ii}" placeholder="https://... (rasm manzili)">
+          </div>
+          <div class="field"><label>Video — fayldan tanlang (asl sifatda GitHub'ga yuklanadi)</label>
+            <input type="file" accept="video/*" data-fileaction="pick-video" data-ci="${ci}" data-ii="${ii}">
+            ${it.video ? `<div class="muted" style="margin-top:2px">Joriy: ${escapeHtml(it.video)}</div>` : ''}
+          </div>
+          <div class="field"><label>...yoki tayyor video havolasi</label>
+            <input type="url" value="${escapeHtml(it.video||'')}" data-f="video" data-ci="${ci}" data-ii="${ii}" placeholder="https://... (video manzili, .mp4)">
+          </div>
+          <button class="btn ghost" data-action="del-item" data-ci="${ci}" data-ii="${ii}">🗑 Mahsulotni o'chirish</button>
+        </div>
+      `).join('')}
+      <button class="btn ghost full" data-action="add-item" data-ci="${ci}">＋ Mahsulot qo'shish</button>
+    </div>
+  `).join('') || '<div class="muted" style="text-align:center;padding:20px">Hali kategoriya yo\'q. Yuqoridan qo\'shing.</div>';
+}
+
+document.getElementById('catsList').addEventListener('click', (e)=>{
+  const delCat = e.target.closest('[data-action="del-cat"]');
+  if(delCat){
+    const ci = +delCat.dataset.ci;
+    if(confirm('Kategoriya butunlay o\'chirilsinmi (ichidagi mahsulotlar bilan)?')){
+      data[activeBiz].categories.splice(ci,1);
+      saveDraft(); renderCats();
+    }
+    return;
+  }
+  const delItem = e.target.closest('[data-action="del-item"]');
+  if(delItem){
+    const ci = +delItem.dataset.ci, ii = +delItem.dataset.ii;
+    data[activeBiz].categories[ci].items.splice(ii,1);
+    saveDraft(); renderCats();
+    return;
+  }
+  const addItem = e.target.closest('[data-action="add-item"]');
+  if(addItem){
+    const ci = +addItem.dataset.ci;
+    data[activeBiz].categories[ci].items.push({name:'Yangi mahsulot', price:0, desc:'', image:'', video:''});
+    saveDraft(); renderCats();
+    return;
+  }
+});
+
+document.getElementById('catsList').addEventListener('change', (e)=>{
+  const t = e.target;
+  const f = t.dataset.f;
+  if(!f) return;
+  const ci = +t.dataset.ci, ii = +t.dataset.ii;
+  const item = data[activeBiz].categories[ci].items[ii];
+  if(f === 'price'){ item.price = parseFloat(t.value)||0; }
+  else{ item[f] = t.value; }
+  saveDraft();
+  if(f === 'image'){
+    const thumb = document.querySelector(`img[data-thumb-img][data-ci="${ci}"][data-ii="${ii}"]`);
+    if(thumb){ thumb.src = t.value; thumb.classList.toggle('show', !!t.value); }
+  }
+});
+
+document.getElementById('catsList').addEventListener('change', (e)=>{
+  const t = e.target;
+  const action = t.dataset.fileaction;
+  if(!action || t.type !== 'file') return;
+  const file = t.files && t.files[0];
+  if(!file) return;
+  const ci = t.dataset.ci, ii = t.dataset.ii;
+  const kind = action === 'pick-image' ? 'image' : 'video';
+  const key = `${activeBiz}-${ci}-${ii}-${kind}`;
+  pendingFiles[key] = file;
+  showToast((kind==='image'?'Rasm':'Video') + ' tanlandi: ' + file.name + ' — "Yuklash va nashr qilish" bosganingizda yuboriladi');
+  if(kind === 'image'){
+    const thumb = document.querySelector(`img[data-thumb-img][data-ci="${ci}"][data-ii="${ii}"]`);
+    if(thumb){ thumb.src = URL.createObjectURL(file); thumb.classList.add('show'); }
+  }
+});
+
+// ---------- Eksport: menu.html tayyorlash ----------
+const MENU_HTML_FALLBACK_B64 = "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9InV6Ij4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9IlVURi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAsIHZpZXdwb3J0LWZpdD1jb3ZlciI+Cjx0aXRsZT5NZW55dTwvdGl0bGU+CjxzdHlsZT4KICA6cm9vdHsKICAgIC0tYmc6I2ZhZjdmMjsgLS1jYXJkOiNmZmY7IC0taW5rOiMyYjIxMTg7IC0tbXV0ZWQ6IzhhN2Q2ZjsgLS1ib3JkZXI6I2U4ZGZkMzsKICAgIC0tcmFobWF0OiNjOTc1MmY7IC0tZG9kYTojNmY0ZTM3OwogIH0KICBAbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOiBkYXJrKXsKICAgIDpyb290eyAtLWJnOiMxYzE3MTI7IC0tY2FyZDojMjYyMDFhOyAtLWluazojZjBlOWRmOyAtLW11dGVkOiNhOTlhODY7IC0tYm9yZGVyOiMzYTMyMjY7IH0KICB9CiAgKntib3gtc2l6aW5nOmJvcmRlci1ib3g7fQogIGJvZHl7bWFyZ2luOjA7YmFja2dyb3VuZDp2YXIoLS1iZyk7Y29sb3I6dmFyKC0taW5rKTtmb250LWZhbWlseTotYXBwbGUtc3lzdGVtLFNlZ29lIFVJLFJvYm90byxzYW5zLXNlcmlmO30KICBoZWFkZXJ7cGFkZGluZzoyNnB4IDE2cHggMTJweDt0ZXh0LWFsaWduOmNlbnRlcjt9CiAgLmxvZ297Zm9udC1zaXplOjEuN3JlbTtmb250LXdlaWdodDo4MDA7bGV0dGVyLXNwYWNpbmc6LjVweDt9CiAgLmJpenN1Yntjb2xvcjp2YXIoLS1tdXRlZCk7Zm9udC1zaXplOi44NXJlbTttYXJnaW4tdG9wOjJweDt9CiAgLnN3aXRjaGVye2Rpc3BsYXk6ZmxleDtnYXA6OHB4O3BhZGRpbmc6MTBweCAxNnB4O21heC13aWR0aDo1MjBweDttYXJnaW46MCBhdXRvO30KICAuc3dpdGNoZXIgYnV0dG9ue2ZsZXg6MTtwYWRkaW5nOjEycHg7Ym9yZGVyLXJhZGl1czoxNHB4O2JvcmRlcjoycHggc29saWQgdmFyKC0tYm9yZGVyKTtiYWNrZ3JvdW5kOnZhcigtLWNhcmQpO2NvbG9yOnZhcigtLWluayk7Zm9udC13ZWlnaHQ6NzAwO2ZvbnQtc2l6ZTouOTVyZW07Y3Vyc29yOnBvaW50ZXI7fQogIC5zd2l0Y2hlciBidXR0b24uYWN0aXZlLnJhaG1hdHtiYWNrZ3JvdW5kOnZhcigtLXJhaG1hdCk7Ym9yZGVyLWNvbG9yOnZhcigtLXJhaG1hdCk7Y29sb3I6I2ZmZjt9CiAgLnN3aXRjaGVyIGJ1dHRvbi5hY3RpdmUuZG9kYXtiYWNrZ3JvdW5kOnZhcigtLWRvZGEpO2JvcmRlci1jb2xvcjp2YXIoLS1kb2RhKTtjb2xvcjojZmZmO30KICBtYWlue21heC13aWR0aDo1MjBweDttYXJnaW46MCBhdXRvO3BhZGRpbmc6NnB4IDE2cHggNDBweDt9CiAgLmNhdHttYXJnaW4tdG9wOjI0cHg7fQogIC5jYXQgaDJ7Zm9udC1zaXplOjEuMDVyZW07bWFyZ2luOjAgMCA4cHg7cGFkZGluZy1ib3R0b206NnB4O2JvcmRlci1ib3R0b206MnB4IHNvbGlkIHZhcigtLWJvcmRlcik7fQogIC5pdGVte3BhZGRpbmc6MTJweCAwO2JvcmRlci1ib3R0b206MXB4IGRhc2hlZCB2YXIoLS1ib3JkZXIpO30KICAuaXRlbTpsYXN0LWNoaWxke2JvcmRlci1ib3R0b206bm9uZTt9CiAgLml0ZW0tbWVkaWF7bWFyZ2luLWJvdHRvbTo4cHg7fQogIC5pdGVtLWltYWdle3dpZHRoOjEwMCU7bWF4LWhlaWdodDoyNDBweDtvYmplY3QtZml0OmNvdmVyO2JvcmRlci1yYWRpdXM6MTJweDtkaXNwbGF5OmJsb2NrO30KICAuaXRlbS12aWRlb3t3aWR0aDoxMDAlO21heC1oZWlnaHQ6MjgwcHg7Ym9yZGVyLXJhZGl1czoxMnB4O2Rpc3BsYXk6YmxvY2s7bWFyZ2luLXRvcDo2cHg7YmFja2dyb3VuZDojMDAwO30KICAuaXRlbS1ib2R5e2Rpc3BsYXk6ZmxleDtqdXN0aWZ5LWNvbnRlbnQ6c3BhY2UtYmV0d2VlbjtnYXA6MTJweDt9CiAgLml0ZW0gLmluYW1le2ZvbnQtd2VpZ2h0OjYwMDt9CiAgLml0ZW0gLmlkZXNje2NvbG9yOnZhcigtLW11dGVkKTtmb250LXNpemU6LjhyZW07bWFyZ2luLXRvcDoycHg7fQogIC5pdGVtIC5pcHJpY2V7d2hpdGUtc3BhY2U6bm93cmFwO2ZvbnQtd2VpZ2h0OjcwMDtmb250LXZhcmlhbnQtbnVtZXJpYzp0YWJ1bGFyLW51bXM7fQogIC5lbXB0eXt0ZXh0LWFsaWduOmNlbnRlcjtjb2xvcjp2YXIoLS1tdXRlZCk7cGFkZGluZzo1MHB4IDEwcHg7fQo8L3N0eWxlPgo8L2hlYWQ+Cjxib2R5PgoKPGhlYWRlcj4KICA8ZGl2IGNsYXNzPSJsb2dvIiBpZD0iYml6TG9nbyI+8J+NsDwvZGl2PgogIDxkaXYgY2xhc3M9ImJpenN1YiIgaWQ9ImJpelN1YiI+PC9kaXY+CjwvaGVhZGVyPgoKPGRpdiBjbGFzcz0ic3dpdGNoZXIiPgogIDxidXR0b24gaWQ9InRhYlJhaG1hdCIgZGF0YS1iaXo9InJhaG1hdCI+UmFobWF0IENoZWY8L2J1dHRvbj4KICA8YnV0dG9uIGlkPSJ0YWJEb2RhIiBkYXRhLWJpej0iZG9kYSI+RG9kYSBDb2ZmZWU8L2J1dHRvbj4KPC9kaXY+Cgo8bWFpbiBpZD0ibWVudU1haW4iPjwvbWFpbj4KCjxzY3JpcHQ+Ci8vID09PT09PSBNRU5ZVSBNQSdMVU1PVExBUkkgKGFkbWluLmh0bWwgb3JxYWxpIGVrc3BvcnQgcWlsaW5nYW5kYSBzaHUgam95IHlhbmdpbGFuYWRpKSA9PT09PT0KY29uc3QgTUVOVV9EQVRBID0gewogIHJhaG1hdDogeyB0aXRsZTogIlJhaG1hdCBDaGVmIiwgc3VidGl0bGU6ICJLbydrY2hhIGRhcnZvemEgMzQwYSIsIGNhdGVnb3JpZXM6IFtdIH0sCiAgZG9kYTogICB7IHRpdGxlOiAiRG9kYSBDb2ZmZWUiLCBzdWJ0aXRsZTogIiIsIGNhdGVnb3JpZXM6IFtdIH0KfTsgLy9fX0VORF9NRU5VX0RBVEFfXwovLyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQoKbGV0IGFjdGl2ZUJpeiA9IChsb2NhdGlvbi5oYXNoLnJlcGxhY2UoJyMnLCcnKSA9PT0gJ2RvZGEnKSA/ICdkb2RhJyA6ICdyYWhtYXQnOwoKZnVuY3Rpb24gZm10KG4pewogIGNvbnN0IHYgPSBOdW1iZXIobik7CiAgaWYoaXNOYU4odikpIHJldHVybiAnMCc7CiAgcmV0dXJuIE1hdGgucm91bmQodikudG9Mb2NhbGVTdHJpbmcoJ3V6LVVaJyk7Cn0KZnVuY3Rpb24gZXNjYXBlSHRtbChzdHIpewogIHJldHVybiBTdHJpbmcoc3RyID8/ICcnKS5yZXBsYWNlKC9bJjw+IiddL2csIGMgPT4gKHsKICAgICcmJzonJmFtcDsnLCc8JzonJmx0OycsJz4nOicmZ3Q7JywnIic6JyZxdW90OycsIiciOicmIzM5OycKICB9W2NdKSk7Cn0KCmZ1bmN0aW9uIHNldEFjdGl2ZUJpeihiaXopewogIGFjdGl2ZUJpeiA9IGJpejsKICBoaXN0b3J5LnJlcGxhY2VTdGF0ZShudWxsLCAnJywgJyMnK2Jpeik7CiAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3RhYlJhaG1hdCcpLmNsYXNzTGlzdC50b2dnbGUoJ2FjdGl2ZScsIGJpej09PSdyYWhtYXQnKTsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndGFiUmFobWF0JykuY2xhc3NMaXN0LnRvZ2dsZSgncmFobWF0JywgYml6PT09J3JhaG1hdCcpOwogIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YWJEb2RhJykuY2xhc3NMaXN0LnRvZ2dsZSgnYWN0aXZlJywgYml6PT09J2RvZGEnKTsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndGFiRG9kYScpLmNsYXNzTGlzdC50b2dnbGUoJ2RvZGEnLCBiaXo9PT0nZG9kYScpOwogIHJlbmRlck1lbnUoKTsKfQoKZnVuY3Rpb24gcmVuZGVyTWVudSgpewogIGNvbnN0IGRhdGEgPSBNRU5VX0RBVEFbYWN0aXZlQml6XTsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYml6TG9nbycpLnRleHRDb250ZW50ID0gYWN0aXZlQml6PT09J3JhaG1hdCcgPyAn8J+NsCcgOiAn4piVJzsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYml6U3ViJykudGV4dENvbnRlbnQgPSBkYXRhLnN1YnRpdGxlIHx8IGRhdGEudGl0bGU7CiAgZG9jdW1lbnQudGl0bGUgPSBkYXRhLnRpdGxlICsgJyDigJQgTWVueXUnOwoKICBjb25zdCBtYWluID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ21lbnVNYWluJyk7CiAgY29uc3QgY2F0cyA9IGRhdGEuY2F0ZWdvcmllcyB8fCBbXTsKICBpZihjYXRzLmxlbmd0aD09PTApewogICAgbWFpbi5pbm5lckhUTUwgPSBgPGRpdiBjbGFzcz0iZW1wdHkiPk1lbnl1IGhhbGkgdGF5eW9ybGFubW9xZGHigKY8L2Rpdj5gOwogICAgcmV0dXJuOwogIH0KICBtYWluLmlubmVySFRNTCA9IGNhdHMubWFwKGNhdD0+YAogICAgPGRpdiBjbGFzcz0iY2F0Ij4KICAgICAgPGgyPiR7ZXNjYXBlSHRtbChjYXQubmFtZSl9PC9oMj4KICAgICAgJHsoY2F0Lml0ZW1zfHxbXSkubGVuZ3RoPT09MCA/IGA8ZGl2IGNsYXNzPSJlbXB0eSIgc3R5bGU9InBhZGRpbmc6MTRweCI+QnUgYm8nbGltZGEgaGFsaSBtYWhzdWxvdCB5bydxPC9kaXY+YCA6IGNhdC5pdGVtcy5tYXAoaXQ9PmAKICAgICAgICA8ZGl2IGNsYXNzPSJpdGVtIj4KICAgICAgICAgICR7KGl0LmltYWdlIHx8IGl0LnZpZGVvKSA/IGA8ZGl2IGNsYXNzPSJpdGVtLW1lZGlhIj4KICAgICAgICAgICAgJHtpdC5pbWFnZSA/IGA8aW1nIGNsYXNzPSJpdGVtLWltYWdlIiBzcmM9IiR7ZXNjYXBlSHRtbChpdC5pbWFnZSl9IiBhbHQ9IiR7ZXNjYXBlSHRtbChpdC5uYW1lKX0iIGxvYWRpbmc9ImxhenkiPmAgOiAnJ30KICAgICAgICAgICAgJHtpdC52aWRlbyA/IGA8dmlkZW8gY2xhc3M9Iml0ZW0tdmlkZW8iIHNyYz0iJHtlc2NhcGVIdG1sKGl0LnZpZGVvKX0iIGNvbnRyb2xzIHBsYXlzaW5saW5lIHByZWxvYWQ9Im1ldGFkYXRhIj48L3ZpZGVvPmAgOiAnJ30KICAgICAgICAgIDwvZGl2PmAgOiAnJ30KICAgICAgICAgIDxkaXYgY2xhc3M9Iml0ZW0tYm9keSI+CiAgICAgICAgICAgIDxkaXY+CiAgICAgICAgICAgICAgPGRpdiBjbGFzcz0iaW5hbWUiPiR7ZXNjYXBlSHRtbChpdC5uYW1lKX08L2Rpdj4KICAgICAgICAgICAgICAke2l0LmRlc2MgPyBgPGRpdiBjbGFzcz0iaWRlc2MiPiR7ZXNjYXBlSHRtbChpdC5kZXNjKX08L2Rpdj5gIDogJyd9CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICA8ZGl2IGNsYXNzPSJpcHJpY2UiPiR7Zm10KGl0LnByaWNlKX0gc28nbTwvZGl2PgogICAgICAgICAgPC9kaXY+CiAgICAgICAgPC9kaXY+CiAgICAgIGApLmpvaW4oJycpfQogICAgPC9kaXY+CiAgYCkuam9pbignJyk7Cn0KCmRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YWJSYWhtYXQnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpPT5zZXRBY3RpdmVCaXooJ3JhaG1hdCcpKTsKZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3RhYkRvZGEnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpPT5zZXRBY3RpdmVCaXooJ2RvZGEnKSk7CndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdoYXNoY2hhbmdlJywgKCk9PnsKICBjb25zdCBiID0gbG9jYXRpb24uaGFzaC5yZXBsYWNlKCcjJywnJyk7CiAgaWYoYj09PSdyYWhtYXQnIHx8IGI9PT0nZG9kYScpIHNldEFjdGl2ZUJpeihiKTsKfSk7CgpzZXRBY3RpdmVCaXooYWN0aXZlQml6KTsKPC9zY3JpcHQ+CjwvYm9keT4KPC9odG1sPgo=";
+
+function b64ToUtf8(b64){
+  const bin = atob(b64.replace(/\n/g,''));
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
+}
+function utf8ToB64(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  bytes.forEach(b=>bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=>resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+function sanitizeFilename(name){
+  return name.toLowerCase().replace(/[^a-z0-9.]+/g,'-').replace(/-+/g,'-');
+}
+
+// ---------- GitHub API ----------
+async function ghRequest(path, options={}){
+  const cfg = loadGhConfig();
+  if(!cfg.owner || !cfg.repo || !cfg.token) throw new Error('Avval GitHub sozlamalarini to\'ldiring va saqlang');
+  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': 'token ' + cfg.token,
+      'Accept': 'application/vnd.github+json',
+      ...(options.headers||{})
+    }
+  });
+  return res;
+}
+async function ghGetFile(path){
+  const cfg = loadGhConfig();
+  const res = await ghRequest(path + '?ref=' + encodeURIComponent(cfg.branch||'main'));
+  if(res.status === 404) return null;
+  if(!res.ok){ const err = await res.json().catch(()=>({})); throw new Error(err.message || ('GitHub xatosi: '+res.status)); }
+  return res.json();
+}
+async function ghPutFile(path, base64Content, message, sha){
+  const cfg = loadGhConfig();
+  const body = { message, content: base64Content, branch: cfg.branch||'main' };
+  if(sha) body.sha = sha;
+  const res = await ghRequest(path, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!res.ok){ const err = await res.json().catch(()=>({})); throw new Error(err.message || ('GitHub xatosi: '+res.status)); }
+  return res.json();
+}
+
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = 'Tayyorlanmoqda…';
+  try{
+    let html;
+    try{
+      const res = await fetch('./menu.html?t=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error('not-found');
+      html = await res.text();
+    }catch(e){
+      html = b64ToUtf8(MENU_HTML_FALLBACK_B64);
+    }
+    const newDataStr = 'const MENU_DATA = ' + JSON.stringify(data, null, 2) + '; //__END_MENU_DATA__';
+    const re = /const MENU_DATA = [\s\S]*?;\s*\/\/__END_MENU_DATA__/;
+    if(!re.test(html)) throw new Error('marker-not-found');
+    html = html.replace(re, newDataStr);
+    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'menu.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Tayyor! menu.html yuklab olindi ✅');
+  }catch(e){
+    console.error(e);
+    showToast('Xatolik yuz berdi: ' + e.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+});
+
+// ---------- GitHub'ga yuklash va nashr qilish ----------
+document.getElementById('publishBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('publishBtn');
+  const statusEl = document.getElementById('publishStatus');
+  const cfg = loadGhConfig();
+  if(!cfg.owner || !cfg.repo || !cfg.token){
+    showToast('Avval yuqorida GitHub sozlamalarini kiritib, saqlang');
+    return;
+  }
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  try{
+    const keys = Object.keys(pendingFiles);
+    let done = 0;
+    for(const key of keys){
+      const file = pendingFiles[key];
+      const [biz, ciStr, iiStr, kind] = key.split('-');
+      const ci = +ciStr, ii = +iiStr;
+      done++;
+      btn.textContent = `Yuklanmoqda (${done}/${keys.length})…`;
+      statusEl.textContent = file.name + ' yuklanmoqda…';
+      const base64 = await fileToBase64(file);
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+      const filename = `${Date.now()}-${sanitizeFilename(file.name)}`;
+      await ghPutFile('media/'+filename, base64, 'Media yuklandi: '+filename);
+      const item = data[biz] && data[biz].categories[ci] && data[biz].categories[ci].items[ii];
+      if(item) item[kind] = 'media/'+filename;
+      delete pendingFiles[key];
+    }
+    saveDraft();
+    if(keys.length>0) renderCats();
+
+    btn.textContent = 'Menyu yangilanmoqda…';
+    statusEl.textContent = 'menu.html yangilanmoqda…';
+    let sha = null, html;
+    const existing = await ghGetFile('menu.html');
+    if(existing){ html = b64ToUtf8(existing.content); sha = existing.sha; }
+    else{ html = b64ToUtf8(MENU_HTML_FALLBACK_B64); }
+
+    const newDataStr = 'const MENU_DATA = ' + JSON.stringify(data, null, 2) + '; //__END_MENU_DATA__';
+    const re = /const MENU_DATA = [\s\S]*?;\s*\/\/__END_MENU_DATA__/;
+    if(!re.test(html)) throw new Error('menu.html ichida MENU_DATA topilmadi');
+    html = html.replace(re, newDataStr);
+    await ghPutFile('menu.html', utf8ToB64(html), 'Menyu yangilandi', sha);
+
+    statusEl.textContent = '✅ Nashr qilindi: ' + guessDefaultMenuUrl();
+    showToast('✅ Nashr qilindi! Mijozlar bir necha soniyada yangi menyuni ko\'radi.');
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = '';
+    showToast('Xatolik: ' + e.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+});
+
+// ---------- QR kod ----------
+function guessDefaultMenuUrl(){
+  // admin.html bilan bir joyda turgan menu.html manzilini taxmin qilamiz
+  const here = location.href.split('#')[0];
+  return here.replace(/admin\.html(\?.*)?$/, 'menu.html');
+}
+document.getElementById('menuBaseUrl').value = guessDefaultMenuUrl();
+
+function renderQr(biz){
+  lastQrBiz = biz;
+  const base = document.getElementById('menuBaseUrl').value.trim() || guessDefaultMenuUrl();
+  const url = base.replace(/#.*$/,'') + '#' + biz;
+  document.getElementById('qrLink').textContent = url;
+  const box = document.getElementById('qrRender');
+  box.innerHTML = '';
+  new QRCode(box, { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+  document.getElementById('qrDownloadBtn').style.display = 'block';
+}
+document.getElementById('qrRahmatBtn').addEventListener('click', ()=>renderQr('rahmat'));
+document.getElementById('qrDodaBtn').addEventListener('click', ()=>renderQr('doda'));
+document.getElementById('qrDownloadBtn').addEventListener('click', ()=>{
+  const canvas = document.querySelector('#qrRender canvas');
+  const img = document.querySelector('#qrRender img');
+  const src = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
+  if(!src){ showToast('Avval QR kodni yarating'); return; }
+  const a = document.createElement('a');
+  a.href = src; a.download = 'qr-' + (lastQrBiz||'menu') + '.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+});
+
+fillGhForm();
+setBiz('rahmat');
+</script>
+</body>
+</html>
